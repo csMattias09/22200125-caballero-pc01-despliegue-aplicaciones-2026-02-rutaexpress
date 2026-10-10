@@ -1,0 +1,35 @@
+# Evidencia generada por scripts/04-concurrencia.sh el 2026-10-10T17:08:34.597Z (UTC)
+# Lado CLIENTE = lineas [cliente]. Lado SERVIDOR = consultas a PostgreSQL / logs de Nginx.
+
+
+==================== a) Dos solicitudes simultaneas con la misma Idempotency-Key ====================
+Prueba 1 - clave: simultaneo-1791652114683847-22375
+[cliente] 2026-10-10T17:08:34.763Z -> 2026-10-10T17:08:35.164Z | HTTP 201 | replica=app3 | replay= | clave=simultaneo-1791652114683847-22375 | {"id":5,"destinatario":"Ana Torres","direccion":"Av. Los Olivos 123, Lima"}
+[cliente] 2026-10-10T17:08:34.776Z -> 2026-10-10T17:08:35.141Z | HTTP 200 | replica=app1 | replay=true | clave=simultaneo-1791652114683847-22375 | {"id":5,"destinatario":"Ana Torres","direccion":"Av. Los Olivos 123, Lima"}
+
+==================== Servidor: envios con esa clave (debe ser 1) ====================
+ id | instancia_creadora |           creado_en           
+----+--------------------+-------------------------------
+  5 | app3               | 2026-10-10 17:08:34.940932+00
+(1 row)
+
+
+==================== Servidor: intentos de esa clave ====================
+          recibido_en          | instancia | resultado | envio_id | http_status 
+-------------------------------+-----------+-----------+----------+-------------
+ 2026-10-10 17:08:34.877461+00 | app3      | CREADO    |        5 |         201
+ 2026-10-10 17:08:34.877945+00 | app1      | REPETIDO  |        5 |         200
+(2 rows)
+
+
+==================== b) Dos envios nuevos intencionales: mismos datos, claves distintas ====================
+[cliente] 2026-10-10T17:08:38.370Z -> 2026-10-10T17:08:38.740Z | HTTP 201 | replica=app2 | replay= | clave=intencional-a-1791652118212673-7094 | {"id":7,"destinatario":"Ana Torres","direccion":"Av. Los Olivos 123, Lima"}
+[cliente] 2026-10-10T17:08:39.649Z -> 2026-10-10T17:08:39.944Z | HTTP 201 | replica=app3 | replay= | clave=intencional-b-1791652118306477-6262 | {"id":8,"destinatario":"Ana Torres","direccion":"Av. Los Olivos 123, Lima"}
+
+==================== Servidor: deben existir dos envios distintos ====================
+ id |           idempotency_key           | destinatario |        direccion         |           creado_en           
+----+-------------------------------------+--------------+--------------------------+-------------------------------
+  7 | intencional-a-1791652118212673-7094 | Ana Torres   | Av. Los Olivos 123, Lima | 2026-10-10 17:08:38.529163+00
+  8 | intencional-b-1791652118306477-6262 | Ana Torres   | Av. Los Olivos 123, Lima | 2026-10-10 17:08:39.773353+00
+(2 rows)
+

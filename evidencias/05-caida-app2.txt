@@ -1,0 +1,58 @@
+# Evidencia generada por scripts/05-caida-app2.sh el 2026-10-10T17:09:44.069Z (UTC)
+# Lado CLIENTE = lineas [cliente]. Lado SERVIDOR = consultas a PostgreSQL / logs de Nginx.
+
+
+==================== Antes: las tres replicas atienden ====================
+[cliente] 2026-10-10T17:09:44.361Z | HTTP 200 | 0.024542s | {"status":"ok","database":"conectada","instance":"app1"}
+[cliente] 2026-10-10T17:09:45.323Z | HTTP 200 | 0.022062s | {"status":"ok","database":"conectada","instance":"app2"}
+[cliente] 2026-10-10T17:09:46.305Z | HTTP 200 | 0.021543s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:09:47.270Z | HTTP 200 | 0.020658s | {"status":"ok","database":"conectada","instance":"app1"}
+[cliente] 2026-10-10T17:09:48.271Z | HTTP 200 | 0.016560s | {"status":"ok","database":"conectada","instance":"app2"}
+[cliente] 2026-10-10T17:09:49.296Z | HTTP 200 | 0.006998s | {"status":"ok","database":"conectada","instance":"app3"}
+
+==================== Deteniendo app2 (2026-10-10T17:09:50.049Z) ====================
+ Container rutaexpress-app2-1 Stopping 
+ Container rutaexpress-app2-1 Stopped 
+SERVICE   STATUS
+app1      Up 4 minutes
+app3      Up 4 minutes
+db        Up 4 minutes (healthy)
+nginx     Up 13 minutes
+
+==================== Con app2 detenida (12 solicitudes) ====================
+[cliente] 2026-10-10T17:09:51.755Z | HTTP 200 | 0.024658s | {"status":"ok","database":"conectada","instance":"app1"}
+[cliente] 2026-10-10T17:09:54.776Z | HTTP 200 | 2.008371s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:09:55.739Z | HTTP 200 | 0.006676s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:09:56.670Z | HTTP 200 | 0.007759s | {"status":"ok","database":"conectada","instance":"app1"}
+[cliente] 2026-10-10T17:09:57.650Z | HTTP 200 | 0.007844s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:09:58.594Z | HTTP 200 | 0.007771s | {"status":"ok","database":"conectada","instance":"app1"}
+[cliente] 2026-10-10T17:09:59.584Z | HTTP 200 | 0.006916s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:10:00.553Z | HTTP 200 | 0.007936s | {"status":"ok","database":"conectada","instance":"app1"}
+[cliente] 2026-10-10T17:10:01.483Z | HTTP 200 | 0.008145s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:10:02.420Z | HTTP 200 | 0.007307s | {"status":"ok","database":"conectada","instance":"app1"}
+[cliente] 2026-10-10T17:10:03.388Z | HTTP 200 | 0.008557s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:10:04.340Z | HTTP 200 | 0.020023s | {"status":"ok","database":"conectada","instance":"app1"}
+Respuestas no exitosas durante la caida: 0
+
+==================== Errores registrados por Nginx durante la transicion ====================
+nginx-1  | 2026/10/10 17:09:54 [warn] 23#23: *55 upstream server temporarily disabled while connecting to upstream, client: 172.19.0.1, server: _, request: "GET /health HTTP/1.1", upstream: "http://172.19.0.3:3000/health", host: "localhost:8080"
+nginx-1  | 2026/10/10 17:09:54 [error] 23#23: *55 upstream timed out (110: Operation timed out) while connecting to upstream, client: 172.19.0.1, server: _, request: "GET /health HTTP/1.1", upstream: "http://172.19.0.3:3000/health", host: "localhost:8080"
+nginx-1  | 2026/10/10 17:09:54 [error] 21#21: app2 could not be resolved (2: Server failure)
+
+==================== Restableciendo app2 (2026-10-10T17:10:05.662Z) ====================
+ Container rutaexpress-db-1 Waiting 
+ Container rutaexpress-db-1 Healthy 
+ Container rutaexpress-app2-1 Starting 
+ Container rutaexpress-app2-1 Started 
+
+==================== Despues: se espera hasta que app2 vuelva a responder ====================
+[cliente] 2026-10-10T17:10:07.329Z | HTTP 200 | 0.009037s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:10:08.386Z | HTTP 200 | 0.019409s | {"status":"ok","database":"conectada","instance":"app1"}
+[cliente] 2026-10-10T17:10:09.418Z | HTTP 200 | 0.007283s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:10:10.501Z | HTTP 200 | 0.056087s | {"status":"ok","database":"conectada","instance":"app2"}
+[cliente] 2026-10-10T17:10:11.048Z | HTTP 200 | 0.020885s | {"status":"ok","database":"conectada","instance":"app1"}
+[cliente] 2026-10-10T17:10:12.028Z | HTTP 200 | 0.014658s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:10:12.980Z | HTTP 200 | 0.007799s | {"status":"ok","database":"conectada","instance":"app2"}
+[cliente] 2026-10-10T17:10:13.930Z | HTTP 200 | 0.006430s | {"status":"ok","database":"conectada","instance":"app1"}
+[cliente] 2026-10-10T17:10:14.880Z | HTTP 200 | 0.005987s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:10:15.814Z | HTTP 200 | 0.007613s | {"status":"ok","database":"conectada","instance":"app2"}

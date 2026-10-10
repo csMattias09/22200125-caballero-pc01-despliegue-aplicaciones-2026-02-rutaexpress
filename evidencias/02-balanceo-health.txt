@@ -1,0 +1,30 @@
+# Evidencia generada por scripts/02-balanceo-health.sh el 2026-10-10T17:03:59.113Z (UTC)
+# Lado CLIENTE = lineas [cliente]. Lado SERVIDOR = consultas a PostgreSQL / logs de Nginx.
+
+
+==================== Servicios en ejecucion (solo nginx:8080 y db:15432 publicados) ====================
+SERVICE   STATUS                   PORTS
+app1      Up 7 minutes             3000/tcp
+app2      Up 7 minutes             3000/tcp
+app3      Up 7 minutes             3000/tcp
+db        Up 7 minutes (healthy)   0.0.0.0:15432->5432/tcp, [::]:15432->5432/tcp
+nginx     Up 7 minutes             0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
+
+==================== 12 solicitudes GET /health (una cada 0.6 s) ====================
+[cliente] 2026-10-10T17:04:00.064Z | HTTP 200 | 0.106470s | {"status":"ok","database":"conectada","instance":"app1"}
+[cliente] 2026-10-10T17:04:01.311Z | HTTP 200 | 0.070286s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:04:02.423Z | HTTP 200 | 0.071960s | {"status":"ok","database":"conectada","instance":"app2"}
+[cliente] 2026-10-10T17:04:03.480Z | HTTP 200 | 0.009381s | {"status":"ok","database":"conectada","instance":"app1"}
+[cliente] 2026-10-10T17:04:04.543Z | HTTP 200 | 0.010958s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:04:05.583Z | HTTP 200 | 0.008965s | {"status":"ok","database":"conectada","instance":"app2"}
+[cliente] 2026-10-10T17:04:06.680Z | HTTP 200 | 0.011375s | {"status":"ok","database":"conectada","instance":"app1"}
+[cliente] 2026-10-10T17:04:07.746Z | HTTP 200 | 0.007960s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:04:08.795Z | HTTP 200 | 0.008201s | {"status":"ok","database":"conectada","instance":"app2"}
+[cliente] 2026-10-10T17:04:09.851Z | HTTP 200 | 0.007963s | {"status":"ok","database":"conectada","instance":"app1"}
+[cliente] 2026-10-10T17:04:10.990Z | HTTP 200 | 0.009061s | {"status":"ok","database":"conectada","instance":"app3"}
+[cliente] 2026-10-10T17:04:12.046Z | HTTP 200 | 0.007449s | {"status":"ok","database":"conectada","instance":"app2"}
+
+==================== Respuestas por replica ====================
+      4 "instance":"app1"
+      4 "instance":"app2"
+      4 "instance":"app3"

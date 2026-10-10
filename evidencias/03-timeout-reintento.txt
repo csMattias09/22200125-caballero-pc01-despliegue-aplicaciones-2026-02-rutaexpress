@@ -1,0 +1,81 @@
+# Evidencia generada por scripts/03-timeout-reintento.sh el 2026-10-10T17:05:08.069Z (UTC)
+# Lado CLIENTE = lineas [cliente]. Lado SERVIDOR = consultas a PostgreSQL / logs de Nginx.
+
+
+==================== Activando la demora solo para esta prueba (PERMITIR_DEMORA=true) ====================
+ Container rutaexpress-db-1 Recreate 
+ Container rutaexpress-db-1 Recreated 
+ Container rutaexpress-app1-1 Recreate 
+ Container rutaexpress-app3-1 Recreate 
+ Container rutaexpress-app2-1 Recreate 
+ Container rutaexpress-app2-1 Recreated 
+ Container rutaexpress-app3-1 Recreated 
+ Container rutaexpress-app1-1 Recreated 
+ Container rutaexpress-db-1 Starting 
+ Container rutaexpress-db-1 Started 
+ Container rutaexpress-db-1 Waiting 
+ Container rutaexpress-db-1 Waiting 
+ Container rutaexpress-db-1 Waiting 
+ Container rutaexpress-db-1 Healthy 
+ Container rutaexpress-db-1 Healthy 
+ Container rutaexpress-app1-1 Starting 
+ Container rutaexpress-app3-1 Starting 
+ Container rutaexpress-db-1 Healthy 
+ Container rutaexpress-app2-1 Starting 
+ Container rutaexpress-app1-1 Started 
+ Container rutaexpress-app3-1 Started 
+ Container rutaexpress-app2-1 Started 
+app1 PERMITIR_DEMORA=true
+Idempotency-Key de la operacion: timeout-1791651918333239-1026
+
+==================== Intento 1: demora de 5 s en el servidor, el cliente espera solo 2 s ====================
+[cliente] 2026-10-10T17:05:18.388Z -> 2026-10-10T17:05:20.545Z | TIMEOUT del cliente (curl exit 28): no se recibio respuesta | clave=timeout-1791651918333239-1026
+
+==================== Servidor: el envio YA existe aunque el cliente no recibio respuesta (consultado a las 2026-10-10T17:05:20.608Z) ====================
+ id |        idempotency_key        | instancia_creadora |          creado_en           
+----+-------------------------------+--------------------+------------------------------
+  3 | timeout-1791651918333239-1026 | app3               | 2026-10-10 17:05:18.56202+00
+(1 row)
+
+Hora del timeout observada por el cliente: 2026-10-10T17:05:20.577Z -> creado_en es anterior.
+Replica que atendio el intento 1: app3
+
+==================== Reintento (misma clave, sin demora) hasta que responda una replica distinta de app3 ====================
+Reintento 1: [cliente] 2026-10-10T17:05:25.796Z -> 2026-10-10T17:05:26.190Z | HTTP 200 | replica=app2 | replay=true | clave=timeout-1791651918333239-1026 | {"id":3,"destinatario":"Ana Torres","direccion":"Av. Los Olivos 123, Lima"}
+
+==================== Servidor: cantidad de envios con esa clave (debe ser 1) ====================
+ envios_registrados 
+--------------------
+                  1
+(1 row)
+
+
+==================== Servidor: todos los intentos de esta operacion ====================
+ id |            request_id            |          recibido_en          | instancia | resultado | envio_id | http_status | respuesta_entregada |                                                         detalle                                                         
+----+----------------------------------+-------------------------------+-----------+-----------+----------+-------------+---------------------+-------------------------------------------------------------------------------------------------------------------------
+ 18 | 619256ff1d4782a4fccab2d12abe74d5 | 2026-10-10 17:05:18.503659+00 | app3      | CREADO    |        3 |             | f                   | demora simulada de 5000 ms despues de confirmar el registro; el cliente cerro la conexion antes de recibir la respuesta
+ 19 | d03b09780d3e022ef46e3a90988231b2 | 2026-10-10 17:05:25.933922+00 | app2      | REPETIDO  |        3 |         200 | t                   | reintento de una operacion ya registrada; no se creo otro envio
+(2 rows)
+
+
+==================== Retirando la demora (vuelve PERMITIR_DEMORA=false del .env) ====================
+ Container rutaexpress-db-1 Running 
+ Container rutaexpress-app1-1 Recreate 
+ Container rutaexpress-app3-1 Recreate 
+ Container rutaexpress-app2-1 Recreate 
+ Container rutaexpress-app1-1 Recreated 
+ Container rutaexpress-app2-1 Recreated 
+ Container rutaexpress-app3-1 Recreated 
+ Container rutaexpress-db-1 Waiting 
+ Container rutaexpress-db-1 Waiting 
+ Container rutaexpress-db-1 Waiting 
+ Container rutaexpress-db-1 Healthy 
+ Container rutaexpress-db-1 Healthy 
+ Container rutaexpress-app2-1 Starting 
+ Container rutaexpress-app3-1 Starting 
+ Container rutaexpress-db-1 Healthy 
+ Container rutaexpress-app1-1 Starting 
+ Container rutaexpress-app2-1 Started 
+ Container rutaexpress-app3-1 Started 
+ Container rutaexpress-app1-1 Started 
+app1 PERMITIR_DEMORA=false
