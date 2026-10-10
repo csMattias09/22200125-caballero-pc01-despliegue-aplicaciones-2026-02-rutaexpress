@@ -1,0 +1,207 @@
+﻿====================================================================================================
+PC01 - DESPLIEGUE DE APLICACIONES (2026-02) - RUTAEXPRESS
+PREGUNTAS DE ANALISIS
+====================================================================================================
+Curso:       Despliegue de Aplicaciones (2026-02)
+Evaluación:  Práctica Calificada 01 — RutaExpress
+Alumno:      Caballero — código 22200125
+Repositorio: github.com/csMattias09/22200125-caballero-pc01-despliegue-aplicaciones-2026-02-rutaexpress
+Imagen:      hub.docker.com/r/csmattias/envios-app (tag 1.0.0)
+
+====================================================================================================
+1. TIMEOUT Y RECUPERACIÓN
+====================================================================================================
+PREGUNTA:
+Un trabajador no recibe la respuesta y vuelve a enviar la solicitud. Según lo que ocurrió en tu
+prueba, ¿qué evita tu solución y por qué es importante para los recojos, los cobros y la confianza
+del cliente?
+
+RESPUESTA:
+
+En mi prueba, el primer intento (Idempotency-Key timeout-1791651918333239-1026) lo atendió app3. El
+envío id 3 quedó guardado en PostgreSQL a las 17:05:18.562, pero la réplica demoró 5 segundos en
+responder y el cliente, que solo esperaba 2 segundos, cortó a las 17:05:20.545 con un timeout (curl
+exit 28). Es justo la situación del trabajador: el envío ya existía, pero él no lo sabía.
+
+Al reintentar con la misma clave, la solicitud llegó a otra réplica (app2), que respondió HTTP 200
+con el mismo id 3 y la cabecera Idempotent-Replayed: true. En la tabla envios hay un solo registro.
+En la tabla intentos se ven los dos intentos relacionados por la clave: CREADO en app3 con
+respuesta_entregada = false, y REPETIDO en app2 con código 200.
+
+Mi solución evita que el reintento cree un segundo envío. Para RutaExpress eso significa que no se
+programan dos recojos (dos viajes del repartidor para un mismo paquete) ni se cobra dos veces al
+cliente. También protege la confianza: el trabajador puede reintentar tranquilo, sin llamar a
+soporte ni revisar a mano si el envío quedó, y el cliente no ve cobros duplicados ni recibe dos
+visitas.
+
+EVIDENCIA: evidencias/03-timeout-reintento.txt, 04-timeout-cliente-reintento-otra-replica.png, 04-intentos-servidor-demora-retirada.png
+
+====================================================================================================
+2. CONCURRENCIA Y RÉPLICAS
+====================================================================================================
+PREGUNTA:
+En tu prueba, dos solicitudes de la misma operación llegaron al mismo tiempo a distintas réplicas.
+¿Qué problema habría para RutaExpress si ambas generaran un envío? Explica por qué se justifica
+controlar este caso aunque exista más de una instancia.
+
+RESPUESTA:
+
+Envié dos POST con la misma clave (simultaneo-1791652114683847-22375) con 13 ms de diferencia. En el
+servidor llegaron con medio milisegundo de diferencia (17:08:34.877461 a app3 y 17:08:34.877945 a
+app1). app3 respondió 201 y app1 respondió 200, ambas con el mismo id 5, y en la base quedó una sola
+fila. También probé el caso contrario: dos envíos intencionales con los mismos datos (Ana Torres,
+Av. Los Olivos 123) pero claves distintas se registraron como envíos diferentes (ids 7 y 8). El
+control no bloquea operaciones legítimas.
+
+Si ambas solicitudes generaran un envío, RutaExpress tendría dos recojos y dos cobros por un mismo
+paquete. Además los reportes quedarían inflados y habría que anular el duplicado a mano, con el
+costo y el reclamo que eso trae.
+
+Se justifica controlarlo precisamente porque hay varias instancias. Cada réplica tiene su propia
+memoria, así que una validación del tipo "busco si existe y, si no, inserto" hecha en la aplicación
+falla: las dos réplicas consultan al mismo tiempo, ninguna ve el envío y ambas lo crean. Por eso el
+control está en PostgreSQL, que es compartido por las tres réplicas: la restricción UNIQUE sobre
+idempotency_key junto con INSERT ... ON CONFLICT DO NOTHING es atómica, y solo un intento puede
+insertar. Cuantas más réplicas haya, más probable es que un reintento caiga en otra instancia (el
+balanceo round-robin lo provoca a propósito), así que el control es más necesario, no menos.
+
+EVIDENCIA: evidencias/04-concurrencia.txt, 05-simultaneos-intencionales.png
+
+====================================================================================================
+3. ENTREGA Y CONFIGURACIÓN
+====================================================================================================
+PREGUNTA:
+Otra oficina necesita poner en funcionamiento tu aplicación. A partir de la imagen y la
+configuración que entregaste, ¿cómo facilitas esa tarea y qué problemas de instalación o diferencias
+entre equipos reduces?
+
+RESPUESTA:
+
+Publiqué la imagen versionada csmattias/envios-app:1.0.0 en Docker Hub (digest sha256:939ec790…).
+Para comprobar que se puede descargar, borré la copia local y la volví a bajar con docker pull. El
+comando whoami dentro de la imagen devuelve node, es decir, no corre como root.
+
+La otra oficina solo necesita Docker. Pasos:
+  - Clonar el repositorio.
+  - Copiar .env.example a .env y poner sus propias credenciales.
+  - Ejecutar docker compose up -d.
+
+Con eso se descarga la imagen ya construida, PostgreSQL crea las tablas solo con db/init.sql y se
+levantan las tres réplicas con Nginx. No tiene que modificar código ni instalar nada más.
+
+Así se reducen varios problemas:
+  - Instalar Node.js o PostgreSQL a mano, o con versiones distintas a las mías.
+  - Dependencias que cambian de un equipo a otro: la imagen lleva las versiones exactas del
+  package-lock.json, instaladas con npm ci.
+  - Crear la base y las tablas manualmente.
+  - El clásico "en mi máquina funciona".
+
+El tag 1.0.0 permite saber exactamente qué versión corre cada oficina. Como las credenciales van en
+el .env y no dentro de la imagen, cada oficina usa las suyas sin reconstruir nada, y las contraseñas
+no quedan expuestas ni en Docker Hub ni en GitHub.
+
+EVIDENCIA: evidencias/01-imagen-dockerhub.txt, 01-build.png, 01-whoami-push.png, 01-pull.png, 01-dockerhub-web.png, 02-usuario-no-root.png
+
+====================================================================================================
+4. PERSISTENCIA Y RECUPERACIÓN
+====================================================================================================
+PREGUNTA:
+Después de recrear los contenedores, tus envíos deben seguir disponibles y un reintento no debe
+duplicarlos. Según tu prueba, ¿qué protege esto para RutaExpress y qué consecuencias tendría perder
+esa información?
+
+RESPUESTA:
+
+Registré tres envíos distintos: id 9 (Luis Ramos), id 10 (Maria Quispe) e id 11 (Carlos Vega). Luego
+recreé los cinco contenedores con docker compose down (sin -v) y docker compose up -d. Después de
+recrearlos, la consulta mostró los mismos ids, datos y fechas de creación, y el total de envíos se
+mantuvo en 8. También los consulté desde DBeaver en localhost:15432. Finalmente reintenté la
+operación del envío 9 con su misma clave: la respuesta fue HTTP 200 con replay=true, y sigue
+existiendo un solo envío con esa clave.
+
+Esto protege tres cosas para RutaExpress:
+  - Los envíos registrados, que son compromisos de recojo y cobro con clientes reales.
+  - Las claves de idempotencia, que son la "memoria" de qué operaciones ya se hicieron.
+  - El historial de intentos, que sirve para auditoría y para resolver reclamos.
+
+Si esa información se perdiera, habría envíos que nadie recoge, clientes reclamando y ninguna forma
+de demostrar qué se registró. Peor aún, al perder las claves, un reintento que llegue después de una
+actualización o un reinicio crearía un envío duplicado, porque el sistema habría "olvidado" que esa
+operación ya existía. Por eso que la idempotencia persista es tan importante como que persistan los
+datos.
+
+EVIDENCIA: evidencias/06-persistencia.txt, 07-antes-recrear- 07-despues-recrear.png, 07-despues-recrear-07-reintento-post-recreacion.png, 07-dbeaver-conexion-dbeaver-envios-dbeaver-intentos.png
+
+====================================================================================================
+5. CONTINUIDAD DEL SERVICIO
+====================================================================================================
+PREGUNTA:
+Al detener app2, las otras réplicas siguieron atendiendo. ¿Qué beneficio representa para una oficina
+que registra envíos durante su jornada? Explica también por qué tener tres réplicas no garantiza que
+el servicio nunca se interrumpa.
+
+RESPUESTA:
+
+Detuve app2 a las 17:09:50. Las 12 solicitudes siguientes recibieron HTTP 200, atendidas solo por
+app1 y app3 ("Respuestas no exitosas: 0"). Durante la transición quedó registrado un error en Nginx:
+a las 17:09:54 intentó conectar con app2, tuvo un timeout de conexión, la marcó como no disponible y
+reenvió la solicitud a app3. El cliente recibió 200, pero esa respuesta tardó 2,008 s en lugar de
+los 0,008 s habituales. Al restablecer app2 (17:10:05), volvió a recibir solicitudes desde las
+17:10:10.
+
+Para una oficina, esto significa que puede seguir registrando envíos durante toda la jornada aunque
+una instancia falle o se esté actualizando. No hay que detener la atención ni dejar clientes
+esperando, y como mucho se nota una demora puntual de unos segundos.
+
+Tener tres réplicas no garantiza que el servicio nunca se interrumpa:
+  - Las tres comparten un solo PostgreSQL y un solo Nginx. Si cualquiera de los dos cae, el servicio
+  completo se detiene (son puntos únicos de falla).
+  - Las tres corren en el mismo equipo y en el mismo Docker. Un corte de luz, de red o un problema
+  del host las tumba a todas a la vez.
+  - Las tres usan la misma imagen. Un error en el código o en la configuración las afecta por igual.
+  - Una carga mayor a la que soportan juntas también las satura.
+
+Además, como vi en la prueba, durante la transición hay demoras mientras Nginx detecta la caída.
+
+EVIDENCIA: evidencias/05-caida-app2.txt, 06-app2-detenida-errores-transicion-app2-retorna.png, 02-balanceo-health.txt
+
+====================================================================================================
+6. RECHAZOS POR EXCESO DE SOLICITUDES
+====================================================================================================
+PREGUNTA:
+Durante una ráfaga de solicitudes, algunas recibieron HTTP 429. ¿Por qué puede justificarse ese
+control para mantener el servicio disponible? Usa tus registros para explicar cómo ayudarían a
+atender el reclamo de un trabajador cuya solicitud fue rechazada.
+
+RESPUESTA:
+
+Envié 30 POST /envios simultáneos, que tardaron 933 ms. Nginx aceptó 6 (HTTP 201) y rechazó 24 con
+HTTP 429. Cuando bajé la frecuencia a una solicitud por segundo, las tres siguientes fueron
+aceptadas (ids 19, 20 y 21). Los 24 rechazos quedaron en logs/nginx/rechazos_429.log, y el archivo
+seguía con las 24 líneas después de recrear el contenedor de Nginx.
+
+El control se justifica porque una ráfaga puede saturar las réplicas y la base de datos y dejar sin
+servicio a todas las oficinas, no solo a la que la provoca. La ráfaga puede venir de un programa con
+un error, de un cliente que reintenta en bucle o de un abuso. Rechazar en Nginx es barato: esas
+solicitudes nunca llegan a la aplicación ni a PostgreSQL. De hecho, en mi tabla intentos no aparece
+ningún 429. El código 429 le indica al cliente "reintente más tarde", y gracias a la Idempotency-Key
+reintentar es seguro.
+
+Si un trabajador reclama que su solicitud fue rechazada, con la hora aproximada y la IP de su
+oficina busco en rechazos_429.log. Cada línea tiene:
+  - Fecha con milisegundos.
+  - IP del cliente (en mi prueba, 172.19.0.1).
+  - Método y ruta (POST /envios).
+  - Código 429 y request_id.
+
+Con eso le explico que fue rechazada por Nginx por exceso de frecuencia desde su IP, que nunca llegó
+a la aplicación y que no se creó ningún envío, así que debe reintentarla. Si su solicitud no aparece
+en ese log, la busco en la tabla intentos por su Idempotency-Key para ver si llegó y con qué
+resultado. Si estos registros muestran que una oficina legítima es rechazada con frecuencia, también
+sirven para justificar un ajuste del límite.
+
+Un detalle que observé: en mi prueba todos los rechazos llegan con la misma IP, porque los clientes
+pasan por la red de Docker. En una oficina real detrás de un mismo router pasaría algo parecido, y
+varios trabajadores compartirían el límite.
+
+EVIDENCIA: evidencias/07-limite-429.txt, 08-rechazos-429-nginx.log, 08-carga-429-08-recuperacion-08-log-rechazos08-log-tras-recrear-nginx.png, 08-resumen-registros.txt
