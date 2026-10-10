@@ -1,0 +1,17 @@
+{
+  "name": "envios-app",
+  "version": "1.0.0",
+  "description": "Servicio de registro de envios de RutaExpress (PC01 - Despliegue de Aplicaciones)",
+  "main": "src/index.js",
+  "private": true,
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  }
+}
