@@ -1,0 +1,23 @@
+# Dependencias: se instalan dentro de la imagen con npm ci
+node_modules
+npm-debug.log*
+
+# Secretos y configuracion local
+.env
+.env.*
+
+# Control de versiones y archivos que no necesita la imagen
+.git
+.gitignore
+.gitattributes
+Dockerfile
+.dockerignore
+docker-compose.yml
+README.md
+*.pdf
+db
+nginx
+logs
+scripts
+evidencias
+respuestas
