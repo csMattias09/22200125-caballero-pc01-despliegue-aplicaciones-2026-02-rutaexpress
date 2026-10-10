@@ -1,0 +1,35 @@
+# Evidencia generada por scripts/08-exportar-registros.sh el 2026-10-10T17:20:38.896Z (UTC)
+# Lado CLIENTE = lineas [cliente]. Lado SERVIDOR = consultas a PostgreSQL / logs de Nginx.
+
+
+==================== Intentos por resultado y codigo HTTP ====================
+ resultado | http_status | respuesta_entregada | count 
+-----------+-------------+---------------------+-------
+ CREADO    |         201 | t                   |    16
+ CREADO    |             | f                   |     1
+ INVALIDO  |         400 | t                   |     1
+ OK        |         200 | t                   |    45
+ REPETIDO  |         200 | t                   |     4
+(5 rows)
+
+
+==================== Intentos por replica ====================
+ instancia | count 
+-----------+-------
+ app1      |    23
+ app2      |    18
+ app3      |    26
+(3 rows)
+
+
+==================== Operaciones con mas de un intento (reintentos relacionados por Idempotency-Key) ====================
+           idempotency_key           | intentos |         secuencia          
+-------------------------------------+----------+----------------------------
+ manual-prueba-001                   |        2 | CREADO@app1, REPETIDO@app3
+ timeout-1791651918333239-1026       |        2 | CREADO@app3, REPETIDO@app2
+ simultaneo-1791652114683847-22375   |        2 | CREADO@app3, REPETIDO@app1
+ persistencia-1791652331818221-25559 |        2 | CREADO@app1, REPETIDO@app1
+(4 rows)
+
+
+Archivos exportados: evidencias/08-envios.csv, evidencias/08-intentos.csv, evidencias/08-rechazos-429-nginx.log

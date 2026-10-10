@@ -1,0 +1,18 @@
+id,idempotency_key,destinatario,direccion,instancia_creadora,creado_en
+1,manual-prueba-001,Ana Torres,"Av. Los Olivos 123, Lima",app1,2026-10-10 16:57:45.792926+00
+3,timeout-1791651918333239-1026,Ana Torres,"Av. Los Olivos 123, Lima",app3,2026-10-10 17:05:18.56202+00
+5,simultaneo-1791652114683847-22375,Ana Torres,"Av. Los Olivos 123, Lima",app3,2026-10-10 17:08:34.940932+00
+7,intencional-a-1791652118212673-7094,Ana Torres,"Av. Los Olivos 123, Lima",app2,2026-10-10 17:08:38.529163+00
+8,intencional-b-1791652118306477-6262,Ana Torres,"Av. Los Olivos 123, Lima",app3,2026-10-10 17:08:39.773353+00
+9,persistencia-1791652331818221-25559,Luis Ramos,"Jr. Ucayali 456, Lima",app1,2026-10-10 17:12:12.024232+00
+10,persistencia-1791652333132604-1180,Maria Quispe,"Calle Las Flores 789, Arequipa",app3,2026-10-10 17:12:13.32029+00
+11,persistencia-1791652334464076-1347,Carlos Vega,"Av. Larco 1020, Trujillo",app2,2026-10-10 17:12:14.663441+00
+13,carga-1791652732965903100-3,Prueba de carga,Sin datos reales,app1,2026-10-10 17:18:53.33491+00
+14,carga-1791652732965903100-2,Prueba de carga,Sin datos reales,app3,2026-10-10 17:18:53.344467+00
+15,carga-1791652732965903100-5,Prueba de carga,Sin datos reales,app3,2026-10-10 17:18:53.346065+00
+16,carga-1791652732965903100-1,Prueba de carga,Sin datos reales,app2,2026-10-10 17:18:53.574412+00
+17,carga-1791652732965903100-4,Prueba de carga,Sin datos reales,app2,2026-10-10 17:18:53.576153+00
+18,carga-1791652732965903100-21,Prueba de carga,Sin datos reales,app1,2026-10-10 17:18:53.659686+00
+19,recuperacion-1791652737208848-19712,Prueba de recuperacion,Sin datos reales,app2,2026-10-10 17:18:57.39433+00
+20,recuperacion-1791652738919879-13591,Prueba de recuperacion,Sin datos reales,app3,2026-10-10 17:18:59.093251+00
+21,recuperacion-1791652740552645-3121,Prueba de recuperacion,Sin datos reales,app1,2026-10-10 17:19:00.729785+00

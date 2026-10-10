@@ -1,0 +1,111 @@
+# Evidencia generada por scripts/06-persistencia.sh el 2026-10-10T17:12:11.745Z (UTC)
+# Lado CLIENTE = lineas [cliente]. Lado SERVIDOR = consultas a PostgreSQL / logs de Nginx.
+
+
+==================== Registro de tres envios distintos ====================
+[cliente] 2026-10-10T17:12:11.869Z -> 2026-10-10T17:12:12.215Z | HTTP 201 | replica=app1 | replay= | clave=persistencia-1791652331818221-25559 | {"id":9,"destinatario":"Luis Ramos","direccion":"Jr. Ucayali 456, Lima"}
+[cliente] 2026-10-10T17:12:13.188Z -> 2026-10-10T17:12:13.548Z | HTTP 201 | replica=app3 | replay= | clave=persistencia-1791652333132604-1180 | {"id":10,"destinatario":"Maria Quispe","direccion":"Calle Las Flores 789, Arequipa"}
+[cliente] 2026-10-10T17:12:14.519Z -> 2026-10-10T17:12:14.905Z | HTTP 201 | replica=app2 | replay= | clave=persistencia-1791652334464076-1347 | {"id":11,"destinatario":"Carlos Vega","direccion":"Av. Larco 1020, Trujillo"}
+
+==================== Antes de recrear ====================
+ id |           idempotency_key           | destinatario |           direccion            |           creado_en           
+----+-------------------------------------+--------------+--------------------------------+-------------------------------
+  9 | persistencia-1791652331818221-25559 | Luis Ramos   | Jr. Ucayali 456, Lima          | 2026-10-10 17:12:12.024232+00
+ 10 | persistencia-1791652333132604-1180  | Maria Quispe | Calle Las Flores 789, Arequipa | 2026-10-10 17:12:13.32029+00
+ 11 | persistencia-1791652334464076-1347  | Carlos Vega  | Av. Larco 1020, Trujillo       | 2026-10-10 17:12:14.663441+00
+(3 rows)
+
+ total_envios | total_intentos 
+--------------+----------------
+            8 |             55
+(1 row)
+
+
+==================== Recreando contenedores: docker compose down (SIN -v) y docker compose up -d ====================
+ Container rutaexpress-nginx-1 Stopping 
+ Container rutaexpress-nginx-1 Stopped 
+ Container rutaexpress-nginx-1 Removing 
+ Container rutaexpress-nginx-1 Removed 
+ Container rutaexpress-app2-1 Stopping 
+ Container rutaexpress-app3-1 Stopping 
+ Container rutaexpress-app1-1 Stopping 
+ Container rutaexpress-app3-1 Stopped 
+ Container rutaexpress-app3-1 Removing 
+ Container rutaexpress-app3-1 Removed 
+ Container rutaexpress-app1-1 Stopped 
+ Container rutaexpress-app1-1 Removing 
+ Container rutaexpress-app2-1 Stopped 
+ Container rutaexpress-app2-1 Removing 
+ Container rutaexpress-app1-1 Removed 
+ Container rutaexpress-app2-1 Removed 
+ Container rutaexpress-db-1 Stopping 
+ Container rutaexpress-db-1 Stopped 
+ Container rutaexpress-db-1 Removing 
+ Container rutaexpress-db-1 Removed 
+ Network rutaexpress_default Removing 
+ Network rutaexpress_default Removed 
+ Network rutaexpress_default Creating 
+ Network rutaexpress_default Creating 
+ Network rutaexpress_default Created 
+ Network rutaexpress_default Created 
+ Container rutaexpress-db-1 Creating 
+ Container rutaexpress-db-1 Created 
+ Container rutaexpress-app2-1 Creating 
+ Container rutaexpress-app1-1 Creating 
+ Container rutaexpress-app3-1 Creating 
+ Container rutaexpress-app2-1 Created 
+ Container rutaexpress-app1-1 Created 
+ Container rutaexpress-app3-1 Created 
+ Container rutaexpress-nginx-1 Creating 
+ Container rutaexpress-nginx-1 Created 
+ Container rutaexpress-db-1 Starting 
+ Container rutaexpress-db-1 Started 
+ Container rutaexpress-db-1 Waiting 
+ Container rutaexpress-db-1 Waiting 
+ Container rutaexpress-db-1 Waiting 
+ Container rutaexpress-db-1 Healthy 
+ Container rutaexpress-db-1 Healthy 
+ Container rutaexpress-app2-1 Starting 
+ Container rutaexpress-app3-1 Starting 
+ Container rutaexpress-db-1 Healthy 
+ Container rutaexpress-app1-1 Starting 
+ Container rutaexpress-app2-1 Started 
+ Container rutaexpress-app3-1 Started 
+ Container rutaexpress-app1-1 Started 
+ Container rutaexpress-nginx-1 Starting 
+ Container rutaexpress-nginx-1 Started 
+SERVICE   STATUS                   CREATED AT
+app1      Up 1 second              2026-10-10 12:12:20 -0500 -05
+app2      Up 2 seconds             2026-10-10 12:12:20 -0500 -05
+app3      Up 1 second              2026-10-10 12:12:20 -0500 -05
+db        Up 8 seconds (healthy)   2026-10-10 12:12:20 -0500 -05
+nginx     Up 1 second              2026-10-10 12:12:20 -0500 -05
+
+==================== Despues de recrear ====================
+ id |           idempotency_key           | destinatario |           direccion            |           creado_en           
+----+-------------------------------------+--------------+--------------------------------+-------------------------------
+  9 | persistencia-1791652331818221-25559 | Luis Ramos   | Jr. Ucayali 456, Lima          | 2026-10-10 17:12:12.024232+00
+ 10 | persistencia-1791652333132604-1180  | Maria Quispe | Calle Las Flores 789, Arequipa | 2026-10-10 17:12:13.32029+00
+ 11 | persistencia-1791652334464076-1347  | Carlos Vega  | Av. Larco 1020, Trujillo       | 2026-10-10 17:12:14.663441+00
+(3 rows)
+
+ total_envios | total_intentos 
+--------------+----------------
+            8 |             56
+(1 row)
+
+RESULTADO: mismos ids y datos antes y despues de recrear.
+
+==================== Reintento de una operacion ya completada (clave persistencia-1791652331818221-25559) ====================
+[cliente] 2026-10-10T17:12:30.642Z -> 2026-10-10T17:12:31.014Z | HTTP 200 | replica=app1 | replay=true | clave=persistencia-1791652331818221-25559 | {"id":9,"destinatario":"Luis Ramos","direccion":"Jr. Ucayali 456, Lima"}
+ envios_con_esa_clave 
+----------------------
+                    1
+(1 row)
+
+          recibido_en          | instancia | resultado | envio_id | http_status 
+-------------------------------+-----------+-----------+----------+-------------
+ 2026-10-10 17:12:12.03209+00  | app1      | CREADO    |        9 |         201
+ 2026-10-10 17:12:30.760389+00 | app1      | REPETIDO  |        9 |         200
+(2 rows)
+

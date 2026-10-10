@@ -1,0 +1,45 @@
+# Evidencia generada por scripts/07-limite-429.sh el 2026-10-10T17:18:52.808Z (UTC)
+# Lado CLIENTE = lineas [cliente]. Lado SERVIDOR = consultas a PostgreSQL / logs de Nginx.
+
+
+==================== Carga: 30 POST /envios simultaneos (claves distintas) ====================
+Solicitudes enviadas: 30
+Respuestas recibidas: 30
+Duracion: 933 ms
+Conteo de codigos HTTP:
+      6 201
+     24 429
+
+==================== Recuperacion: se reduce la frecuencia a 1 solicitud por segundo ====================
+[cliente] 2026-10-10T17:18:57.269Z -> 2026-10-10T17:18:57.603Z | HTTP 201 | replica=app2 | replay= | clave=recuperacion-1791652737208848-19712 | {"id":19,"destinatario":"Prueba de recuperacion","direccion":"Sin datos reales"}
+[cliente] 2026-10-10T17:18:58.973Z -> 2026-10-10T17:18:59.268Z | HTTP 201 | replica=app3 | replay= | clave=recuperacion-1791652738919879-13591 | {"id":20,"destinatario":"Prueba de recuperacion","direccion":"Sin datos reales"}
+[cliente] 2026-10-10T17:19:00.613Z -> 2026-10-10T17:19:00.904Z | HTTP 201 | replica=app1 | replay= | clave=recuperacion-1791652740552645-3121 | {"id":21,"destinatario":"Prueba de recuperacion","direccion":"Sin datos reales"}
+
+==================== Rechazos registrados por Nginx (logs/nginx/rechazos_429.log) ====================
+Lineas antes de la prueba: 0 | despues: 24 | nuevas: 24
+{"fecha":"2026-10-10T17:18:53+00:00","msec":"1791652733.780","request_id":"a69c89ca2a9260abe885e8b2f8cc5d06","ip_cliente":"172.19.0.1","metodo":"POST","ruta":"/envios","status":429}
+{"fecha":"2026-10-10T17:18:53+00:00","msec":"1791652733.811","request_id":"2469e5d420dc7d62e517f785cfe09621","ip_cliente":"172.19.0.1","metodo":"POST","ruta":"/envios","status":429}
+{"fecha":"2026-10-10T17:18:53+00:00","msec":"1791652733.827","request_id":"cad0e4db37932929f124491acb966b75","ip_cliente":"172.19.0.1","metodo":"POST","ruta":"/envios","status":429}
+{"fecha":"2026-10-10T17:18:53+00:00","msec":"1791652733.841","request_id":"9870708f0c462b903a6eff09ff6121e9","ip_cliente":"172.19.0.1","metodo":"POST","ruta":"/envios","status":429}
+{"fecha":"2026-10-10T17:18:53+00:00","msec":"1791652733.862","request_id":"321042d93219eb9c64710e07ffacf0f7","ip_cliente":"172.19.0.1","metodo":"POST","ruta":"/envios","status":429}
+
+==================== Recreando el contenedor de Nginx (docker compose up -d --force-recreate nginx) ====================
+ Container rutaexpress-db-1 Running 
+ Container rutaexpress-app1-1 Running 
+ Container rutaexpress-app2-1 Running 
+ Container rutaexpress-app3-1 Running 
+ Container rutaexpress-nginx-1 Recreate 
+ Container rutaexpress-nginx-1 Recreated 
+ Container rutaexpress-db-1 Waiting 
+ Container rutaexpress-db-1 Waiting 
+ Container rutaexpress-db-1 Waiting 
+ Container rutaexpress-db-1 Healthy 
+ Container rutaexpress-db-1 Healthy 
+ Container rutaexpress-db-1 Healthy 
+ Container rutaexpress-nginx-1 Starting 
+ Container rutaexpress-nginx-1 Started 
+Lineas en el log de rechazos tras recrear Nginx: 24
+
+==================== Consulta del log: rechazos por IP y por minuto ====================
+     24 2026-10-10T17:18
+     24 "ip_cliente":"172.19.0.1"
