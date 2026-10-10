@@ -1,0 +1,18 @@
+# Dependencias
+node_modules/
+
+# Secretos: nunca subir el .env real
+.env
+
+# Logs generados en tiempo de ejecucion (Nginx)
+logs/nginx/*
+!logs/nginx/.gitkeep
+
+# Enunciado de la practica (no forma parte del proyecto)
+*.pdf
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+.vscode/
+npm-debug.log*
